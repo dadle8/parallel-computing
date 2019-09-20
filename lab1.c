@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
    int i, N, lenM1, lenM2, A = 507;
    struct timeval T1,T2;
    long delta_ms;
-   double minNotZero, X = 0.0;
+   double minNotZero = 0.0, X = 0.0;
 
    N = atoi(argv[1]);
    lenM1 = N;
