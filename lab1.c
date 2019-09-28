@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
          M2[j] = M1[j] > M2[j] ? M2[j] : M1[j];
       }
 
-      // Gnome sort
+      // Selection sort
       for (int j = 0; j < lenM2m1; j++) {
          int indexMin = j;
 
