@@ -16,11 +16,11 @@ int main(int argc, char* argv[])
    for (i = 0; i < 50; i++) {
       unsigned  int seed = i;
       // generate
-      double *M1 = malloc(lenM1 * sizeof(double));
+      double M1[lenM1];
       for (int j = 0; j < lenM1; j++) {
          M1[j] = 1 + (double)(rand_r(&seed)) / (RAND_MAX / (A));
       }
-      double *M2 = malloc(lenM2 * sizeof(double));
+      double M2[lenM2];
       for (int j = 0; j < lenM2; j++) {
          M2[j] = A + (double)(rand_r(&seed)) / (RAND_MAX / (9 * A + 1));
       }
