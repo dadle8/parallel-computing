@@ -4,7 +4,7 @@
 #include <math.h>
 int main(int argc, char* argv[])
 {
-   int i, N, lenM1, lenM2, A = 507;
+   int i, N, lenM1, lenM2, lenM2m1, A = 504;
    struct timeval T1,T2;
    long delta_ms;
    double minNotZero = 0.0, X = 0.0;
@@ -12,6 +12,7 @@ int main(int argc, char* argv[])
    N = atoi(argv[1]);
    lenM1 = N;
    lenM2 = N / 2;
+   lenM2m1 = lenM2 - 1;
    gettimeofday(&T1, NULL);
    for (i = 0; i < 50; i++) {
       unsigned  int seed = i;
@@ -38,20 +39,21 @@ int main(int argc, char* argv[])
       for (int j = 0; j < lenM2; j++) {
          M2[j] = M1[j] > M2[j] ? M2[j] : M1[j];
       }
-      
+
       // Gnome sort
-      int index = 0; 
-      while (index < lenM2) { 
-         if (index == 0) 
-               index++; 
-         if (M2[index] >= M2[index - 1]) 
-               index++; 
-         else { 
-               double temp = M2[index]; 
-               M2[index] = M2[index - 1]; 
-               M2[index - 1] = temp;
-               index--; 
-         } 
+      for (int j = 0; j < lenM2m1; j++) {
+         int indexMin = j;
+
+         for (int k = j + 1; k < lenM2; k++) {
+            if (M2[indexMin] > M2[k])
+            indexMin = k;
+         }
+
+         if (indexMin != j) {
+            double temp = M2[j];
+            M2[j] = M2[indexMin];
+            M2[indexMin] = temp;
+         }
       }
 
       // reduce
