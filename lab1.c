@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
       // map
       for (int j = 0; j < lenM1; j++) {
-         M1[i] = exp(sqrt(M1[i]));
+         M1[j] = exp(sqrt(M1[j]));
       }
       M2[0] = fabs(tan(M2[0]));
       for (int j = 1; j < lenM2; j++) {
