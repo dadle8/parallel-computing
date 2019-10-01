@@ -53,3 +53,5 @@ dkms.conf
 
 # VS Code
 .vscode/
+
+!FW_1.3.1_Lin64/lib/*
