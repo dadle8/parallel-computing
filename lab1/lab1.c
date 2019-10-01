@@ -30,9 +30,11 @@ int main(int argc, char* argv[])
       for (int j = 0; j < lenM1; j++) {
          M1[j] = exp(sqrt(M1[j]));
       }
-      M2[0] = fabs(tan(M2[0]));
-      for (int j = 1; j < lenM2; j++) {
-         M2[j] = fabs(tan(M2[j] + M2[j-1]));
+      double previousValue = 0.0;
+      for (int j = 0; j < lenM2; j++) {
+         double currentValue = M2[j];
+         M2[j] = fabs(tan(previousValue + currentValue));
+         previousValue = currentValue;
       }
 
       // merge

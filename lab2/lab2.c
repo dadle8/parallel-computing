@@ -37,10 +37,16 @@ int main(int argc, char* argv[])
       fwsSqrt_64f_I(M1, lenM1);
       fwsExp_64f_I(M1, lenM1);
 
-      M2[0] = fabs(tan(M2[0]));
+      // prepare temp array
+      double M2Temp[lenM2];
+      M2Temp[0] = 0;
       for (int j = 1; j < lenM2; j++) {
-         M2[j] = fabs(tan(M2[j] + M2[j-1]));
+         M2Temp[j] = M2[j - 1];
       }
+      
+      fwsAdd_64f_I(M2Temp, M2, lenM2);
+      fwsTan_64f_A50(M2, M2, lenM2);
+      fwsAbs_64f_I(M2, lenM2);
 
       // merge
       for (int j = 0; j < lenM2; j++) {
