@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 
    gettimeofday(&T2, NULL);
    delta_ms = 1000*(T2.tv_sec - T1.tv_sec) + (T2.tv_usec - T1.tv_usec)/1000;
-   printf("\nN=%d. Milliseconds passed: %ld. X=%f\n", N, delta_ms, X);
+   printf("\nN=%d. M=%d. Milliseconds passed: %ld. X=%f\n", N, M, delta_ms, X);
 
    return 0;
 }
