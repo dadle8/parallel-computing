@@ -1,11 +1,8 @@
 #!/bin/bash
-
-for M in 1 2 3 4
+for N in `seq 600 740 8000`
 do
-	./lab2 600 $M
-done
-
-for M in 1 2 3 4
-do
-	./lab2 8000 $M
+    for M in 1 2 3 4
+    do
+        ./lab2 $N $M
+    done
 done
