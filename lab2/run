@@ -1,0 +1,8 @@
+#!/bin/bash
+for N in `seq 600 740 8000`
+do
+    for M in 1 2 3 4
+    do
+        ./lab2 $N $M
+    done
+done
