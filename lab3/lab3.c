@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <math.h>
+#include <omp.h>
+
 int main(int argc, char* argv[])
 {
    int i, N, lenM1, lenM2, lenM2m1, A = 504;
@@ -14,6 +16,7 @@ int main(int argc, char* argv[])
    lenM2 = N / 2;
    lenM2m1 = lenM2 - 1;
    gettimeofday(&T1, NULL);
+   #pragma omp parallel for default(none) private(minNotZero) shared(...)
    for (i = 0; i < 50; i++) {
       unsigned  int seed = i;
       // generate
