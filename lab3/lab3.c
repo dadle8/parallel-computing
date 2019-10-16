@@ -16,8 +16,9 @@ int main(int argc, char* argv[])
    lenM2 = N / 2;
    lenM2m1 = lenM2 - 1;
    gettimeofday(&T1, NULL);
-   #pragma omp parallel for default(none) private(minNotZero) shared(...)
+   #pragma omp parallel for default(none) private(minNotZero) shared(lenM1, lenM2, lenM2m1, A) reduction (+:X)
    for (i = 0; i < 50; i++) {
+      minNotZero = 0.0;
       unsigned  int seed = i;
       // generate
       double M1[lenM1];
