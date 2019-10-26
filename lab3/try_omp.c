@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
         #pragma omp critical
         {   
             i++;
-            printf("i=%d\n", i);
+            printf(" i=%d\n", i);
         }
     }
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     #pragma omp parallel for reduction (+:sum)
     for (i = 0; i < 100; i++) sum +=i;
 
-    printf("sum=%d", sum);
+    printf("sum=%d\n", sum);
 
     float s = 0;
     #pragma omp parallel for reduction (+:s) num_threads(6)
