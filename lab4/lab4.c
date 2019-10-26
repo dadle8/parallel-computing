@@ -1,21 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <math.h>
 #include <omp.h>
 
 int main(int argc, char* argv[])
 {
    int i, N, lenM1, lenM2, lenM2m1, A = 504;
-   struct timeval T1,T2;
-   long delta_ms;
-   double minNotZero = 0.0, X = 0.0;
+   double minNotZero = 0.0, X = 0.0, T1,T2, delta_s;
 
    N = atoi(argv[1]);
    lenM1 = N;
    lenM2 = N / 2;
    lenM2m1 = lenM2 - 1;
-   gettimeofday(&T1, NULL);
+   T1 = omp_get_wtime();
    #pragma omp parallel for default(none) private(minNotZero) shared(lenM1, lenM2, lenM2m1, A) reduction (+:X)
    for (i = 0; i < 50; i++) {
       minNotZero = 0.0;
@@ -127,9 +124,9 @@ int main(int argc, char* argv[])
       }
    }
 
-   gettimeofday(&T2, NULL);
-   delta_ms = 1000*(T2.tv_sec - T1.tv_sec) + (T2.tv_usec - T1.tv_usec)/1000;
-   printf("\nN=%d. Milliseconds passed: %ld. X=%f\n", N, delta_ms, X);
+   T2 = omp_get_wtime();
+   delta_s = T2 - T1;
+   printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
 
    return 0;
 }
