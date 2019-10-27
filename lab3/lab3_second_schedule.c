@@ -22,18 +22,15 @@ int main(int argc, char* argv[])
       unsigned  int seed = i;
       // generate
       double M1[lenM1];
-      #pragma omp parallel for default(none) shared(seed, lenM1, A, M1) schedule(static, 1)
       for (int j = 0; j < lenM1; j++) {
          M1[j] = 1 + (double)(rand_r(&seed)) / (RAND_MAX / (A));
       }
       double M2[lenM2];
-      #pragma omp parallel for default(none) shared(seed, lenM2, A, M2) schedule(static, 1)
       for (int j = 0; j < lenM2; j++) {
          M2[j] = A + (double)(rand_r(&seed)) / (RAND_MAX / (9 * A + 1));
       }
 
       // map
-      #pragma omp parallel for default(none) shared(lenM1, M1) schedule(static, 1)
       for (int j = 0; j < lenM1; j++) {
          M1[j] = exp(sqrt(M1[j]));
       }
@@ -45,13 +42,11 @@ int main(int argc, char* argv[])
       }
 
       // merge
-      #pragma omp parallel for default(none) shared(lenM2, M1, M2) schedule(static, 1)
       for (int j = 0; j < lenM2; j++) {
          M2[j] = M1[j] > M2[j] ? M2[j] : M1[j];
       }
 
       // Selection sort
-      #pragma omp parallel for default(none) shared(lenM2m1, lenM2, M2) schedule(static, 1)
       for (int j = 0; j < lenM2m1; j++) {
          int indexMin = j;
 
@@ -74,7 +69,6 @@ int main(int argc, char* argv[])
             break;
          }
       }
-      #pragma omp parallel for default(none) shared(lenM2, M2, minNotZero) reduction (+:X) schedule(static, 1)
       for (int j = 0; j < lenM2; j++) {
          if (((int)(M2[j] / minNotZero)) % 2 == 0) {
             X += sin(M2[j]);
