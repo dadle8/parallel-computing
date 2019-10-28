@@ -6,7 +6,7 @@
 int main(int argc, char* argv[])
 {
    int i, N, lenM1, lenM2, lenM2m1, A = 504;
-   double minNotZero = 0.0, X = 0.0, T1,T2, delta_s;
+   double minNotZero = 0.0, X = 0.0, T1, T2, delta_s, T3, T4, delta_rand_r = 0.0;
 
    N = atoi(argv[1]);
    lenM1 = N;
@@ -16,14 +16,29 @@ int main(int argc, char* argv[])
    for (i = 0; i < 50; i++) {
       minNotZero = 0.0;
       unsigned  int seed = i;
+
+      int rand_v1[lenM1];
+      int rand_v2[lenM2];
+      T3 = omp_get_wtime();
+      for(int j = 0; j < lenM1; j++) {
+         rand_v1[j] = rand_r(&seed);
+      }
+      for(int j = 0; j < lenM2; j++) {
+         rand_v2[j] = rand_r(&seed);
+      }
+      T4 = omp_get_wtime();
+      delta_rand_r += T4 - T3;
+
       // generate
       double M1[lenM1];
+      #pragma omp parallel for default(none) shared(lenM1, M1, rand_v1, A)
       for (int j = 0; j < lenM1; j++) {
-         M1[j] = 1 + (double)(rand_r(&seed)) / (RAND_MAX / (A));
+         M1[j] = 1 + (double)(rand_v1[j]) / (RAND_MAX / (A));
       }
       double M2[lenM2];
+      #pragma omp parallel for default(none) shared(lenM2, M2, rand_v2, A)
       for (int j = 0; j < lenM2; j++) {
-         M2[j] = A + (double)(rand_r(&seed)) / (RAND_MAX / (9 * A + 1));
+         M2[j] = A + (double)(rand_v2[j]) / (RAND_MAX / (9 * A + 1));
       }
 
       // map
@@ -122,7 +137,7 @@ int main(int argc, char* argv[])
    }
 
    T2 = omp_get_wtime();
-   delta_s = T2 - T1;
+   delta_s = T2 - T1 - delta_rand_r;
    printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
 
    return 0;
