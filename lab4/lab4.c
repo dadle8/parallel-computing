@@ -1,7 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <math.h>
-#include <omp.h>
+
+#ifdef _OPENMP
+   #include "omp.h"
+
+   void printResults(int N, double delta_s, double X) {
+      printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, 1000.0 * delta_s, X);
+   }
+#else
+   int omp_get_wtime(){
+      struct timeval T11;
+      gettimeofday(&T11, NULL);
+      return T11.tv_sec * 1000 + T11.tv_usec/1000;
+   }
+
+   void printResults(int N, double delta_s, double X) {
+      printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
+   }
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -15,8 +33,9 @@ int main(int argc, char* argv[])
    T1 = omp_get_wtime();
    for (i = 0; i < 50; i++) {
       minNotZero = 0.0;
-      unsigned  int seed = i;
+      unsigned int seed = i;
 
+      // pregenerate values
       int rand_v1[lenM1];
       int rand_v2[lenM2];
       T3 = omp_get_wtime();
@@ -138,7 +157,7 @@ int main(int argc, char* argv[])
 
    T2 = omp_get_wtime();
    delta_s = T2 - T1 - delta_rand_r;
-   printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
+   printResults(N, delta_s, X);
 
    return 0;
 }
