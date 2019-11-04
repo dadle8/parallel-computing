@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <math.h>
+#include <unistd.h>
 
 #ifdef _OPENMP
    #include "omp.h"
@@ -23,28 +24,30 @@
 
 int main(int argc, char* argv[])
 {
-   int num;
+   int N, num, percent = 0;
+   double delta_s, X = 0.0;
    omp_set_nested(1);
 
-   #pragma omp parallel default(none) num_threads(2) private(num) shared(argv)
+   #pragma omp parallel default(none) num_threads(2) private(num) shared(N, delta_s, X, percent, argv)
    {
       num = omp_get_thread_num();
       if (num == 0) {
-         for(int j = 0; j < 50; j++) {
-            printf("%d\n", j);
-            // fflush(stdout);
+         for(;percent != 250;) {
+            printf("%d\n", (int) (percent / 2.5));
+            sleep(1);
          }
+         printf("%d\n", (int) (percent / 2.5));
       }
       else {
-         int i, N, lenM1, lenM2, lenM2m1, A = 504;
-         double minNotZero = 0.0, X = 0.0, T1, T2, delta_s, T3, T4, delta_rand_r = 0.0;
+         int lenM1, lenM2, lenM2m1, A = 504;
+         double minNotZero = 0.0, T1, T2, T3, T4, delta_rand_r = 0.0;
 
          N = atoi(argv[1]);
          lenM1 = N;
          lenM2 = N / 2;
          lenM2m1 = lenM2 - 1;
          T1 = omp_get_wtime();
-         for (i = 0; i < 50; i++) {
+         for (int i = 0; i < 50; i++) {
             minNotZero = 0.0;
             unsigned int seed = i;
 
@@ -72,6 +75,8 @@ int main(int argc, char* argv[])
             for (int j = 0; j < lenM2; j++) {
                M2[j] = A + (double)(rand_v2[j]) / (RAND_MAX / (9 * A + 1));
             }
+            #pragma omp atomic
+            percent++;
 
             // map
             #pragma omp parallel for default(none) shared(lenM1, M1)
@@ -84,12 +89,16 @@ int main(int argc, char* argv[])
                M2[j] = fabs(tan(previousValue + currentValue));
                previousValue = currentValue;
             }
+            #pragma omp atomic
+            percent++;
 
             // merge
             #pragma omp parallel for default(none) shared(lenM2, M1, M2)
             for (int j = 0; j < lenM2; j++) {
                M2[j] = M1[j] > M2[j] ? M2[j] : M1[j];
             }
+            #pragma omp atomic
+            percent++;
 
             // Selection sort
             #pragma omp parallel default(none) shared(lenM2m1, lenM2, M2) num_threads(2)
@@ -152,6 +161,8 @@ int main(int argc, char* argv[])
                M2merged[k++] = M2[indexB++];
             }
             // End Selection sort
+            #pragma omp atomic
+            percent++;
 
             // reduce
             for (int j = 0; j < lenM2; j++) {
@@ -166,13 +177,16 @@ int main(int argc, char* argv[])
                   X += sin(M2merged[j]);
                }
             }
+            #pragma omp atomic
+            percent++;
          }
 
          T2 = omp_get_wtime();
          delta_s = T2 - T1 - delta_rand_r;
-         printResults(N, delta_s, X);
       }
    }
+
+   printResults(N, delta_s, X);
    
    return 0;
 }
