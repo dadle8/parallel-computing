@@ -20,6 +20,14 @@
    void printResults(int N, double delta_s, double X) {
       printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
    }
+
+   int omp_get_thread_num() {
+      return 1;
+   }
+
+   int omp_set_nested(int value) {
+      return 0;
+   }
 #endif
 
 int main(int argc, char* argv[])
