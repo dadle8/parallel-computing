@@ -28,15 +28,17 @@ int main(int argc, char* argv[])
    double delta_s, X = 0.0;
    omp_set_nested(1);
 
-   #pragma omp parallel default(none) num_threads(2) private(num) shared(N, delta_s, X, percent, argv)
+   #pragma omp parallel default(none) num_threads(2) private(num) shared(N, delta_s, X, percent, stdout, argv)
    {
       num = omp_get_thread_num();
       if (num == 0) {
          for(;percent != 250;) {
-            printf("%d\n", (int) (percent / 2.5));
+            // printf("thread num in counter = %d\n", omp_get_thread_num());
+            printf("\r%d", (int) (percent / 2.5));
+            fflush(stdout);
             sleep(1);
          }
-         printf("%d\n", (int) (percent / 2.5));
+         printf("\r%d\n", (int) (percent / 2.5));
       }
       else {
          int lenM1, lenM2, lenM2m1, A = 504;
@@ -48,6 +50,7 @@ int main(int argc, char* argv[])
          lenM2m1 = lenM2 - 1;
          T1 = omp_get_wtime();
          for (int i = 0; i < 50; i++) {
+            // printf("thread num in start for = %d\n", omp_get_thread_num());
             minNotZero = 0.0;
             unsigned int seed = i;
 
@@ -68,19 +71,21 @@ int main(int argc, char* argv[])
             double M1[lenM1];
             #pragma omp parallel for default(none) shared(lenM1, M1, rand_v1, A)
             for (int j = 0; j < lenM1; j++) {
+               // printf("thread num in generate M1 = %d\n", omp_get_thread_num());
                M1[j] = 1 + (double)(rand_v1[j]) / (RAND_MAX / (A));
             }
             double M2[lenM2];
             #pragma omp parallel for default(none) shared(lenM2, M2, rand_v2, A)
             for (int j = 0; j < lenM2; j++) {
+               // printf("thread num in generate M2 = %d\n", omp_get_thread_num());
                M2[j] = A + (double)(rand_v2[j]) / (RAND_MAX / (9 * A + 1));
             }
-            #pragma omp atomic
             percent++;
 
             // map
             #pragma omp parallel for default(none) shared(lenM1, M1)
             for (int j = 0; j < lenM1; j++) {
+               // printf("thread num in map = %d\n", omp_get_thread_num());
                M1[j] = exp(sqrt(M1[j]));
             }
             double previousValue = 0.0;
@@ -89,25 +94,26 @@ int main(int argc, char* argv[])
                M2[j] = fabs(tan(previousValue + currentValue));
                previousValue = currentValue;
             }
-            #pragma omp atomic
             percent++;
 
             // merge
             #pragma omp parallel for default(none) shared(lenM2, M1, M2)
             for (int j = 0; j < lenM2; j++) {
+               // printf("thread num in merge = %d\n", omp_get_thread_num());
                M2[j] = M1[j] > M2[j] ? M2[j] : M1[j];
             }
-            #pragma omp atomic
             percent++;
 
             // Selection sort
             #pragma omp parallel default(none) shared(lenM2m1, lenM2, M2) num_threads(2)
             {
-               #pragma omp sections 
+               #pragma omp sections
                {
                   #pragma omp section
                   {
+                     // printf("thread num in first section = %d\n", omp_get_thread_num());
                      for (int j = 0; j < lenM2 / 2 - 1; j++) {
+                        // printf("thread num in first for = %d\n", omp_get_thread_num());
                         int indexMin = j;
 
                         for (int k = j + 1; k < lenM2 / 2; k++) {
@@ -125,7 +131,9 @@ int main(int argc, char* argv[])
 
                   #pragma omp section
                   {
+                     // printf("thread num in second section = %d\n", omp_get_thread_num());
                      for (int j = lenM2 / 2; j < lenM2m1; j++) {
+                        // printf("thread num in second for = %d\n", omp_get_thread_num());
                         int indexMin = j;
 
                         for (int k = j + 1; k < lenM2; k++) {
@@ -143,12 +151,14 @@ int main(int argc, char* argv[])
                }
             }
 
+            // printf("thread num before merge M2 = %d\n", omp_get_thread_num());
+
             // Merge M2
             double M2merged[lenM2];
             int sz_A = lenM2 / 2, sz_B = lenM2, indexA = 0, indexB = lenM2 / 2, k = 0;
             while (indexA < sz_A && indexB < sz_B) {
             if (M2[indexA] < M2[indexB]) {
-                  M2merged[k++] = M2[indexA++];        
+                  M2merged[k++] = M2[indexA++];
             } else {
                   M2merged[k++] = M2[indexB++];
             }
@@ -161,8 +171,9 @@ int main(int argc, char* argv[])
                M2merged[k++] = M2[indexB++];
             }
             // End Selection sort
-            #pragma omp atomic
             percent++;
+
+            // printf("thread num before reduce = %d\n", omp_get_thread_num());
 
             // reduce
             for (int j = 0; j < lenM2; j++) {
@@ -173,11 +184,11 @@ int main(int argc, char* argv[])
             }
             #pragma omp parallel for default(none) shared(lenM2, M2merged, minNotZero) reduction (+:X)
             for (int j = 0; j < lenM2; j++) {
+               // printf("thread num in last for = %d\n", omp_get_thread_num());
                if (((int)(M2merged[j] / minNotZero)) % 2 == 0) {
                   X += sin(M2merged[j]);
                }
             }
-            #pragma omp atomic
             percent++;
          }
 
@@ -187,6 +198,6 @@ int main(int argc, char* argv[])
    }
 
    printResults(N, delta_s, X);
-   
+
    return 0;
 }
