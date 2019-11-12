@@ -16,18 +16,15 @@ int main(int argc, char* argv[])
    lenM2 = N / 2;
    lenM2m1 = lenM2 - 1;
    gettimeofday(&T1, NULL);
-   #pragma omp parallel for default(none) private(minNotZero) shared(lenM1, lenM2, lenM2m1, A) reduction (+:X)
    for (i = 0; i < 50; i++) {
       minNotZero = 0.0;
       unsigned  int seed = i;
       // generate
       double M1[lenM1];
-      #pragma omp parallel for default(none) shared(seed, lenM1, A, M1)
       for (int j = 0; j < lenM1; j++) {
          M1[j] = 1 + (double)(rand_r(&seed)) / (RAND_MAX / (A));
       }
       double M2[lenM2];
-      #pragma omp parallel for default(none) shared(seed, lenM2, A, M2)
       for (int j = 0; j < lenM2; j++) {
          M2[j] = A + (double)(rand_r(&seed)) / (RAND_MAX / (9 * A + 1));
       }
@@ -51,7 +48,6 @@ int main(int argc, char* argv[])
       }
 
       // Selection sort
-      #pragma omp parallel for default(none) shared(lenM2m1, lenM2, M2)
       for (int j = 0; j < lenM2m1; j++) {
          int indexMin = j;
 
