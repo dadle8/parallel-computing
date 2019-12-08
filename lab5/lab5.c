@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <math.h>
-#include <unistd.h>
 #include <pthread.h>
+#include "lab5_util.h"
 
 #ifdef _OPENMP
    #include "omp.h"
@@ -25,74 +25,33 @@
    int omp_get_thread_num() {
       return 1;
    }
-
-   int omp_set_nested(int value) {
-      return 0;
-   }
 #endif
 
-#define NUM_THREADS 1
-
-int num = 0, percent = 0;
-
-typedef struct _thread_data_t {
-  int tid;
-  double *M1;
-  double *M2;
-  int start_i;
-  int end_i;
-} thread_data_t;
-
-void *thr_merge(void *arg) {
-   thread_data_t *data = (thread_data_t *)arg;
-
-   // printf("data tid=%d, start_i=%d, end_i=%d", data->tid, data->start_i, data->end_i);
-
-  for (int j = data->start_i; j < data->end_i; j++) {
-         // printf("thread num in merge = %d\n", data->tid);
-         data->M2[j] = data->M1[j] > data->M2[j] ? data->M2[j] : data->M1[j];
-   }
- 
-  pthread_exit(0);
-}
-
-void *printProgres() {
-   for(;percent != 250;) {
-      printf("\r%d", (int) (percent / 2.5));
-      fflush(stdout);
-      sleep(1);
-   }
-   printf("\r%d\n", (int) (percent / 2.5));
-   pthread_exit(0);
-}
+int progres = 0;
 
 int main(int argc, char* argv[])
 {
-   int N, rc;
-   double delta_s, X = 0.0;
+   int rc;
    pthread_t t_progres_id;
-
    pthread_t thr[NUM_THREADS];
    thread_data_t thr_data[NUM_THREADS];
 
-   if ((rc = pthread_create(&t_progres_id, NULL, printProgres, NULL))) {
-      fprintf(stderr, "error: pthread_create, rc: %d\n", rc);
+   if ((rc = pthread_create(&t_progres_id, NULL, printProgres, &progres))) {
+      printf("Error: pthread_create, rc: %d\n", rc);
       return EXIT_FAILURE;
    }
 
-   int lenM1, lenM2, lenM2m1, A = 504;
-   double minNotZero = 0.0, T1, T2, T3, T4, delta_rand_r = 0.0;
+   int N = atoi(argv[1]),
+       lenM1 = N,
+       lenM2 = N / 2,
+       A = 504;
+   double minNotZero = 0.0, T1, T2, T3, T4, delta_rand_r = 0.0, delta_s, X = 0.0;
 
-   N = atoi(argv[1]);
-   lenM1 = N;
-   lenM2 = N / 2;
-   lenM2m1 = lenM2 - 1;
    T1 = omp_get_wtime();
-   for (int i = 0; i < 50; i++) {
-      minNotZero = 0.0;
+   for (int i = 0; i < NUM_OF_EXP; i++) {
       unsigned int seed = i;
 
-      // pregenerate values
+      // Start Pregenerate values
       int rand_v1[lenM1];
       int rand_v2[lenM2];
       T3 = omp_get_wtime();
@@ -104,8 +63,9 @@ int main(int argc, char* argv[])
       }
       T4 = omp_get_wtime();
       delta_rand_r += T4 - T3;
+      // End Pregenerate values
 
-      // generate
+      // Start Generate
       double M1[lenM1];
       #pragma omp parallel for default(none) shared(lenM1, M1, rand_v1, A)
       for (int j = 0; j < lenM1; j++) {
@@ -118,9 +78,10 @@ int main(int argc, char* argv[])
          // printf("thread num in generate M2 = %d\n", omp_get_thread_num());
          M2[j] = A + (double)(rand_v2[j]) / (RAND_MAX / (9 * A + 1));
       }
-      percent++;
+      // End Generate
+      progres++;
 
-      // map
+      // Start Map
       #pragma omp parallel for default(none) shared(lenM1, M1)
       for (int j = 0; j < lenM1; j++) {
          // printf("thread num in map = %d\n", omp_get_thread_num());
@@ -132,22 +93,22 @@ int main(int argc, char* argv[])
          M2[j] = fabs(tan(previousValue + currentValue));
          previousValue = currentValue;
       }
-      percent++;
+      // End Map
+      progres++;
 
-      // merge
+      // Start Merge
       int start_i = 0, end_i = lenM2 / NUM_THREADS;
       if (lenM2 < NUM_THREADS) {
          end_i = lenM2;
       }
+      /* create threads */
       for (int j = 0; j < NUM_THREADS; ++j) {
-         thr_data[j].tid = j;
-         thr_data[j].start_i = start_i;
-         thr_data[j].end_i = end_i;
-         thr_data[j].M1 = M1;
-         thr_data[j].M2 = M2;
+         thr_data[j] = buildThreadDataT(j, M1, M2, start_i, end_i);
+
+         // printf("thr_data tid=%d, start_i=%d, end_i=%d\n", thr_data[j].tid, thr_data[j].start_i, thr_data[j].end_i);
 
          if ((rc = pthread_create(&thr[j], NULL, thr_merge, &thr_data[j]))) {
-            fprintf(stderr, "error: pthread_create, rc: %d\n", rc);
+            printf("Error: pthread_create, rc: %d\n", rc);
             return EXIT_FAILURE;
          }
 
@@ -163,13 +124,13 @@ int main(int argc, char* argv[])
       }
       /* block until all threads complete */
       for (int j = 0; j < NUM_THREADS; ++j) {
-         // printf("we on thread=%d", thr_data[i].tid);
          pthread_join(thr[j], NULL);
       }
-      percent++;
+      // End Merge
+      progres++;
 
-      // Selection sort
-      #pragma omp parallel default(none) shared(lenM2m1, lenM2, M2) num_threads(2)
+      // Start Selection sort
+      #pragma omp parallel default(none) shared(lenM2, M2) num_threads(2)
       {
          #pragma omp sections
          {
@@ -196,7 +157,7 @@ int main(int argc, char* argv[])
             #pragma omp section
             {
                // printf("thread num in second section = %d\n", omp_get_thread_num());
-               for (int j = lenM2 / 2; j < lenM2m1; j++) {
+               for (int j = lenM2 / 2; j < lenM2 - 1; j++) {
                   // printf("thread num in second for = %d\n", omp_get_thread_num());
                   int indexMin = j;
 
@@ -214,8 +175,6 @@ int main(int argc, char* argv[])
             }
          }
       }
-
-      // printf("thread num before merge M2 = %d\n", omp_get_thread_num());
 
       // Merge M2
       double M2merged[lenM2];
@@ -235,11 +194,11 @@ int main(int argc, char* argv[])
          M2merged[k++] = M2[indexB++];
       }
       // End Selection sort
-      percent++;
+      progres++;
 
       // printf("thread num before reduce = %d\n", omp_get_thread_num());
 
-      // reduce
+      // Start Reduce
       for (int j = 0; j < lenM2; j++) {
          if (M2merged[j] != 0) {
             minNotZero = M2merged[j];
@@ -253,12 +212,14 @@ int main(int argc, char* argv[])
             X += sin(M2merged[j]);
          }
       }
-      percent++;
+      // End Reduce
+      progres++;
    }
 
    T2 = omp_get_wtime();
    delta_s = T2 - T1 - delta_rand_r;
    
+   /* Wait progres bar thread */
    pthread_join(t_progres_id, NULL);
 
    printResults(N, delta_s, X);

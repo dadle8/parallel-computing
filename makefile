@@ -24,7 +24,7 @@ lab4: ./lab4/lab4.c
 	gcc -O2 -Wall -o ./lab4/lab4-without-omp ./lab4/lab4.c -lm
 
 lab5: ./lab5/lab5.c
-	gcc -O2 -Wall -Werror -o ./lab5/lab5 ./lab5/lab5.c -lm -fopenmp -lpthread
+	gcc -O2 -Wall -Werror -o ./lab5/lab5 ./lab5/lab5.c ./lab5/lab5_util.c -lm -fopenmp
 
 # Clear sections
 clear-all: clear-lab1 clear-lab2 clear-lab3 clear-lab4 clear-lab5
