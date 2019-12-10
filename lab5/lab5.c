@@ -8,8 +8,8 @@
 #ifdef _OPENMP
    #include "omp.h"
 
-   void printResults(int N, double delta_s, double X) {
-      printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, 1000.0 * delta_s, X);
+   void printResults(int N, double delta_s, double delta_merge, double X) {
+      printf("\nN=%d. Milliseconds passed: %f. X=%f. Delta merge=%f\n", N, 1000.0 * delta_s, X, 1000 * delta_merge);
    }
 #else
    int omp_get_wtime(){
@@ -18,8 +18,8 @@
       return T11.tv_sec * 1000 + T11.tv_usec/1000;
    }
 
-   void printResults(int N, double delta_s, double X) {
-      printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
+   void printResults(int N, double delta_s, double delta_merge, double X) {
+      printf("\nN=%d. Milliseconds passed: %f. X=%f. Delta merge=%f\n", N, delta_s, X, delta_merge);
    }
 
    int omp_get_thread_num() {
@@ -45,7 +45,10 @@ int main(int argc, char* argv[])
        lenM1 = N,
        lenM2 = N / 2,
        A = 504;
-   double minNotZero = 0.0, T1, T2, T3, T4, delta_rand_r = 0.0, delta_s, X = 0.0;
+   double minNotZero = 0.0,
+          T1, T2, T_start_pregenerate, T_end_pregenerate, T_start_merge, T_end_merge,
+          delta_rand_r = 0.0, delta_s, delta_merge = 0.0,
+          X = 0.0;
 
    T1 = omp_get_wtime();
    for (int i = 0; i < NUM_OF_EXP; i++) {
@@ -54,15 +57,15 @@ int main(int argc, char* argv[])
       // Start Pregenerate values
       int rand_v1[lenM1];
       int rand_v2[lenM2];
-      T3 = omp_get_wtime();
+      T_start_pregenerate = omp_get_wtime();
       for(int j = 0; j < lenM1; j++) {
          rand_v1[j] = rand_r(&seed);
       }
       for(int j = 0; j < lenM2; j++) {
          rand_v2[j] = rand_r(&seed);
       }
-      T4 = omp_get_wtime();
-      delta_rand_r += T4 - T3;
+      T_end_pregenerate = omp_get_wtime();
+      delta_rand_r += T_end_pregenerate - T_start_pregenerate;
       // End Pregenerate values
 
       // Start Generate
@@ -97,6 +100,7 @@ int main(int argc, char* argv[])
       progres++;
 
       // Start Merge
+      T_start_merge = omp_get_wtime();
       int start_i = 0, end_i = lenM2 / NUM_THREADS;
       if (lenM2 < NUM_THREADS) {
          end_i = lenM2;
@@ -126,6 +130,8 @@ int main(int argc, char* argv[])
       for (int j = 0; j < NUM_THREADS; ++j) {
          pthread_join(thr[j], NULL);
       }
+      T_end_merge = omp_get_wtime();
+      delta_merge += T_end_merge - T_start_merge;
       // End Merge
       progres++;
 
@@ -222,7 +228,7 @@ int main(int argc, char* argv[])
    /* Wait progres bar thread */
    pthread_join(t_progres_id, NULL);
 
-   printResults(N, delta_s, X);
+   printResults(N, delta_s, delta_merge, X);
 
    return 0;
 }

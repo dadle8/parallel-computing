@@ -7,8 +7,8 @@
 #ifdef _OPENMP
    #include "omp.h"
 
-   void printResults(int N, double delta_s, double X) {
-      printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, 1000.0 * delta_s, X);
+   void printResults(int N, double delta_s, double delta_merge, double X) {
+      printf("\nN=%d. Milliseconds passed: %f. X=%f. Delta merge=%f\n", N, 1000.0 * delta_s, X, 1000 * delta_merge);
    }
 #else
    int omp_get_wtime(){
@@ -17,8 +17,8 @@
       return T11.tv_sec * 1000 + T11.tv_usec/1000;
    }
 
-   void printResults(int N, double delta_s, double X) {
-      printf("\nN=%d. Milliseconds passed: %f. X=%f\n", N, delta_s, X);
+   void printResults(int N, double delta_s, double delta_merge, double X) {
+      printf("\nN=%d. Milliseconds passed: %f. X=%f. Delta merge=%f\n", N, delta_s, X, delta_merge);
    }
 
    int omp_get_thread_num() {
@@ -33,10 +33,10 @@
 int main(int argc, char* argv[])
 {
    int N, num, percent = 0;
-   double delta_s, X = 0.0;
+   double delta_s, delta_merge = 0.0, X = 0.0;
    omp_set_nested(1);
 
-   #pragma omp parallel default(none) num_threads(2) private(num) shared(N, delta_s, X, percent, stdout, argv)
+   #pragma omp parallel default(none) num_threads(2) private(num) shared(N, delta_s, delta_merge, X, percent, stdout, argv)
    {
       num = omp_get_thread_num();
       if (num == 0) {
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
       }
       else {
          int lenM1, lenM2, lenM2m1, A = 504;
-         double minNotZero = 0.0, T1, T2, T3, T4, delta_rand_r = 0.0;
+         double minNotZero = 0.0, T1, T2, T3, T4, T_start_merge, T_end_merge, delta_rand_r = 0.0;
 
          N = atoi(argv[1]);
          lenM1 = N;
@@ -91,6 +91,7 @@ int main(int argc, char* argv[])
             percent++;
 
             // map
+            T_start_merge = omp_get_wtime();
             #pragma omp parallel for default(none) shared(lenM1, M1)
             for (int j = 0; j < lenM1; j++) {
                // printf("thread num in map = %d\n", omp_get_thread_num());
@@ -110,6 +111,8 @@ int main(int argc, char* argv[])
                // printf("thread num in merge = %d\n", omp_get_thread_num());
                M2[j] = M1[j] > M2[j] ? M2[j] : M1[j];
             }
+            T_end_merge = omp_get_wtime();
+            delta_merge += T_end_merge - T_start_merge;
             percent++;
 
             // Selection sort
@@ -205,7 +208,7 @@ int main(int argc, char* argv[])
       }
    }
 
-   printResults(N, delta_s, X);
+   printResults(N, delta_s, delta_merge, X);
 
    return 0;
 }
