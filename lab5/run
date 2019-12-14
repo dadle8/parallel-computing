@@ -1,0 +1,6 @@
+#!/bin/bash
+for N in `seq 600 740 8000`
+do
+	./"$1" "$N"
+done
+echo
